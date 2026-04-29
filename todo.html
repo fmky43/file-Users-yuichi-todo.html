@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToDoリスト</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 16px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 480px;
+      padding: 32px;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      color: #1a1a2e;
+      margin-bottom: 24px;
+    }
+
+    .input-section {
+      margin-bottom: 24px;
+    }
+
+    .input-section > input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 8px;
+    }
+
+    .input-section > input[type="text"]:focus { border-color: #4a6cf7; }
+
+    .input-bottom-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* 優先度セレクター */
+    .priority-group {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .pri-btn {
+      padding: 7px 11px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      background: white;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #999;
+      transition: all 0.15s;
+    }
+
+    .pri-btn[data-pri="high"].active { background: #fde8e8; border-color: #e74c3c; color: #c0392b; }
+    .pri-btn[data-pri="mid"].active  { background: #fef9e7; border-color: #f39c12; color: #d68910; }
+    .pri-btn[data-pri="low"].active  { background: #eafaf1; border-color: #27ae60; color: #1e8449; }
+    .pri-btn[data-pri="high"]:hover:not(.active) { background: #fff5f5; border-color: #f5b7b1; color: #e74c3c; }
+    .pri-btn[data-pri="mid"]:hover:not(.active)  { background: #fffbf0; border-color: #fad7a0; color: #f39c12; }
+    .pri-btn[data-pri="low"]:hover:not(.active)  { background: #f0faf4; border-color: #a9dfbf; color: #27ae60; }
+
+    .date-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: #666;
+      flex: 1;
+      min-width: 130px;
+    }
+
+    .date-label input[type="date"] {
+      padding: 7px 10px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s;
+      color: #333;
+      flex: 1;
+    }
+
+    .date-label input[type="date"]:focus { border-color: #4a6cf7; }
+
+    .input-bottom-row > button {
+      padding: 10px 18px;
+      background: #4a6cf7;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .input-bottom-row > button:hover { background: #3a5ce7; }
+
+    .input-mid-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .cat-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: #666;
+      flex: 1;
+    }
+
+    .cat-label input {
+      padding: 7px 10px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s;
+      color: #333;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cat-label input:focus { border-color: #4a6cf7; }
+
+    .cat-filter-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .cat-btn {
+      padding: 4px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 20px;
+      background: white;
+      font-size: 0.78rem;
+      cursor: pointer;
+      color: #666;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .cat-btn.active { background: #4a6cf7; border-color: #4a6cf7; color: white; }
+    .cat-btn:hover:not(.active) { border-color: #bbb; color: #333; }
+
+    .cat-badge {
+      font-size: 0.73rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+      border: 1px solid transparent;
+    }
+
+    .filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .filters button {
+      padding: 6px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 20px;
+      background: white;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: #555;
+      transition: all 0.2s;
+    }
+
+    .filters button.active {
+      background: #4a6cf7;
+      border-color: #4a6cf7;
+      color: white;
+    }
+
+    ul { list-style: none; }
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0 12px 10px;
+      border-bottom: 1px solid #f0f0f0;
+      border-left: 3px solid transparent;
+      margin-left: -10px;
+      transition: border-left-color 0.2s;
+    }
+
+    li:last-child { border-bottom: none; }
+
+    li[data-priority="high"] { border-left-color: #e74c3c; }
+    li[data-priority="mid"]  { border-left-color: #f39c12; }
+    li[data-priority="low"]  { border-left-color: #27ae60; }
+    li.done { border-left-color: #ddd !important; }
+
+    li input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #4a6cf7;
+      cursor: pointer;
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin-top: 2px;
+    }
+
+    .task-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .task-text {
+      font-size: 1rem;
+      color: #333;
+      word-break: break-word;
+    }
+
+    li.done .task-text {
+      text-decoration: line-through;
+      color: #aaa;
+    }
+
+    .badges {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .priority-badge {
+      font-size: 0.73rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+
+    .priority-badge.high { background: #fde8e8; color: #c0392b; }
+    .priority-badge.mid  { background: #fef9e7; color: #d68910; }
+    .priority-badge.low  { background: #eafaf1; color: #1e8449; }
+    li.done .priority-badge { background: #f0f0f0 !important; color: #bbb !important; }
+
+    .deadline-badge {
+      font-size: 0.73rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+
+    .deadline-badge.normal   { background: #eef0f8; color: #5a6a9a; }
+    .deadline-badge.today    { background: #fff3cd; color: #856404; }
+    .deadline-badge.overdue  { background: #fde8e8; color: #c0392b; }
+    .deadline-badge.done-date { background: #f0f0f0; color: #bbb; }
+
+    li button.delete {
+      background: none;
+      border: none;
+      color: #ccc;
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color 0.2s;
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+
+    li button.delete:hover { color: #e74c3c; }
+
+    .footer {
+      margin-top: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: #999;
+    }
+
+    .footer button {
+      background: none;
+      border: none;
+      color: #e74c3c;
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 0;
+    }
+
+    .footer button:hover { text-decoration: underline; }
+
+    .empty {
+      text-align: center;
+      color: #ccc;
+      padding: 32px 0;
+      font-size: 0.95rem;
+    }
+
+    .handle {
+      cursor: grab;
+      color: #ccc;
+      font-size: 1rem;
+      flex-shrink: 0;
+      user-select: none;
+      padding: 0 2px;
+      line-height: 1;
+    }
+
+    .handle:hover { color: #aaa; }
+
+    li.dragging { opacity: 0.4; }
+    li.drag-over { background: #f0f4ff; border-radius: 6px; }
+
+    /* ヘッダー行 */
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .title-row h1 { margin-bottom: 0; }
+
+    .dark-toggle {
+      padding: 6px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 20px;
+      background: white;
+      font-size: 0.82rem;
+      cursor: pointer;
+      color: #555;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .dark-toggle:hover { border-color: #aaa; color: #333; }
+
+    /* ダークモード */
+    body.dark { background: #121212; }
+
+    body.dark .container {
+      background: #1e1e1e;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.5);
+    }
+
+    body.dark h1 { color: #e0e0e0; }
+
+    body.dark .dark-toggle {
+      background: #2a2a2a;
+      border-color: #444;
+      color: #aaa;
+    }
+
+    body.dark .dark-toggle:hover { border-color: #888; color: #e0e0e0; }
+
+    body.dark .input-section > input[type="text"] {
+      background: #2a2a2a;
+      border-color: #3a3a3a;
+      color: #e0e0e0;
+    }
+
+    body.dark .input-section > input[type="text"]::placeholder { color: #666; }
+    body.dark .input-section > input[type="text"]:focus { border-color: #4a6cf7; }
+
+    body.dark .pri-btn { background: #2a2a2a; border-color: #3a3a3a; color: #666; }
+    body.dark .pri-btn[data-pri="high"].active { background: #3d1a1a; border-color: #e74c3c; color: #e74c3c; }
+    body.dark .pri-btn[data-pri="mid"].active  { background: #3d2e0a; border-color: #f39c12; color: #f39c12; }
+    body.dark .pri-btn[data-pri="low"].active  { background: #0f3320; border-color: #27ae60; color: #2ecc71; }
+    body.dark .pri-btn[data-pri="high"]:hover:not(.active) { background: #2d1515; border-color: #c0392b; color: #e74c3c; }
+    body.dark .pri-btn[data-pri="mid"]:hover:not(.active)  { background: #2d2408; border-color: #d68910; color: #f39c12; }
+    body.dark .pri-btn[data-pri="low"]:hover:not(.active)  { background: #0a2818; border-color: #1e8449; color: #2ecc71; }
+
+    body.dark .date-label { color: #888; }
+
+    body.dark .date-label input[type="date"] {
+      background: #2a2a2a;
+      border-color: #3a3a3a;
+      color: #e0e0e0;
+      color-scheme: dark;
+    }
+
+    body.dark .date-label input[type="date"]:focus { border-color: #4a6cf7; }
+
+    body.dark .input-bottom-row > button:hover { background: #3a5ce7; }
+
+    body.dark .filters button { background: #2a2a2a; border-color: #3a3a3a; color: #888; }
+    body.dark .filters button.active { background: #4a6cf7; border-color: #4a6cf7; color: white; }
+
+    body.dark li { border-bottom-color: #2a2a2a; }
+    body.dark li.done { border-left-color: #333 !important; }
+
+    body.dark .task-text { color: #e0e0e0; }
+    body.dark li.done .task-text { color: #555; }
+
+    body.dark .priority-badge.high { background: #3d1a1a; color: #e74c3c; }
+    body.dark .priority-badge.mid  { background: #3d2e0a; color: #f39c12; }
+    body.dark .priority-badge.low  { background: #0f3320; color: #2ecc71; }
+    body.dark li.done .priority-badge { background: #2a2a2a !important; color: #444 !important; }
+
+    body.dark .deadline-badge.normal    { background: #1e2535; color: #7a8fbf; }
+    body.dark .deadline-badge.today     { background: #3d2e0a; color: #f0c040; }
+    body.dark .deadline-badge.overdue   { background: #3d1a1a; color: #e74c3c; }
+    body.dark .deadline-badge.done-date { background: #2a2a2a; color: #444; }
+
+    body.dark li button.delete { color: #444; }
+    body.dark li button.delete:hover { color: #e74c3c; }
+
+    body.dark .footer { color: #555; }
+    body.dark .footer button { color: #c0392b; }
+
+    body.dark .empty { color: #444; }
+
+    /* 進捗グラフ */
+    .chart-section {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 14px 16px;
+      background: #f8f9fc;
+      border-radius: 10px;
+      margin-bottom: 16px;
+    }
+
+    .chart-wrap { flex-shrink: 0; }
+
+    .chart-track { stroke: #e8eaf0; transition: stroke 0.3s; }
+    .chart-arc   { stroke: #4a6cf7; transition: stroke-dasharray 0.5s ease; }
+    .chart-pct   { fill: #1a1a2e; font-size: 15px; font-weight: 700; }
+    .chart-sub   { fill: #aaa; font-size: 8px; }
+
+    .chart-stats { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stat-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .stat-dot.done   { background: #4a6cf7; }
+    .stat-dot.active { background: #e0e4f0; }
+
+    .stat-label { font-size: 0.82rem; color: #888; }
+    .stat-count { font-size: 1.05rem; font-weight: 700; color: #1a1a2e; margin-left: auto; }
+
+    body.dark .chart-section { background: #252525; }
+    body.dark .chart-track { stroke: #333; }
+    body.dark .chart-pct   { fill: #e0e0e0; }
+    body.dark .chart-sub   { fill: #555; }
+    body.dark .stat-label  { color: #666; }
+    body.dark .stat-count  { color: #e0e0e0; }
+    body.dark .stat-dot.active { background: #333; }
+
+    body.dark .cat-label { color: #888; }
+    body.dark .cat-label input { background: #2a2a2a; border-color: #3a3a3a; color: #e0e0e0; }
+    body.dark .cat-label input:focus { border-color: #4a6cf7; }
+    body.dark .cat-label input::placeholder { color: #666; }
+    body.dark .cat-btn { background: #2a2a2a; border-color: #3a3a3a; color: #888; }
+    body.dark .cat-btn.active { background: #4a6cf7; border-color: #4a6cf7; color: white; }
+    body.dark .cat-btn:hover:not(.active) { border-color: #555; color: #aaa; }
+
+    body.dark .handle { color: #3a3a3a; }
+    body.dark .handle:hover { color: #666; }
+    body.dark li.drag-over { background: #1e2535; }
+
+    /* ===== スマホ最適化 ===== */
+    @media (max-width: 600px) {
+      body {
+        padding: 12px 8px;
+        align-items: stretch;
+      }
+
+      .container {
+        padding: 18px 14px;
+        border-radius: 10px;
+        max-width: 100%;
+      }
+
+      h1 { font-size: 1.35rem; }
+
+      /* iOS Safari のズーム防止: input は 16px 以上必須 */
+      .input-section > input[type="text"],
+      .cat-label input,
+      .date-label input[type="date"] {
+        font-size: 16px;
+        min-height: 48px;
+        padding: 12px 14px;
+      }
+
+      /* 優先度ボタン */
+      .pri-btn {
+        min-height: 48px;
+        min-width: 44px;
+        padding: 12px 16px;
+        font-size: 0.95rem;
+      }
+
+      /* カテゴリ行 */
+      .input-mid-row { gap: 10px; }
+
+      /* 追加ボタン */
+      .input-bottom-row > button {
+        min-height: 48px;
+        padding: 14px 22px;
+        font-size: 1rem;
+        border-radius: 10px;
+      }
+
+      /* フィルタータブ: 均等横並び */
+      .filters { gap: 6px; }
+      .filters button {
+        flex: 1;
+        min-height: 44px;
+        padding: 10px 6px;
+        font-size: 0.88rem;
+        text-align: center;
+      }
+
+      /* カテゴリフィルターボタン */
+      .cat-btn {
+        min-height: 40px;
+        padding: 8px 16px;
+        font-size: 0.85rem;
+      }
+
+      /* タスクアイテム: 縦に余裕を持たせる */
+      li {
+        padding: 16px 0 16px 10px;
+        gap: 14px;
+        align-items: flex-start;
+      }
+
+      /* チェックボックス: 大きく */
+      li input[type="checkbox"] {
+        width: 24px;
+        height: 24px;
+        margin-top: 3px;
+      }
+
+      /* 削除ボタン: 44×44 のタップ領域を確保 */
+      li button.delete {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 10px;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        align-self: flex-start;
+      }
+
+      li button.delete:active { background: #fde8e8; }
+      body.dark li button.delete:active { background: #3d1a1a; }
+
+      /* ダークモードトグル */
+      .dark-toggle {
+        min-height: 44px;
+        padding: 10px 18px;
+        font-size: 0.9rem;
+      }
+
+      /* ドラッグハンドル */
+      .handle {
+        font-size: 1.4rem;
+        padding: 2px 4px;
+        min-width: 24px;
+        text-align: center;
+      }
+
+      /* タスクテキスト */
+      .task-text { font-size: 1.05rem; }
+
+      /* バッジ */
+      .priority-badge, .deadline-badge, .cat-badge {
+        font-size: 0.78rem;
+        padding: 3px 10px;
+      }
+
+      /* フッター */
+      .footer { margin-top: 20px; }
+      .footer button {
+        font-size: 0.9rem;
+        padding: 8px 0;
+        min-height: 44px;
+      }
+
+      /* 進捗グラフ */
+      .chart-section { padding: 12px 14px; gap: 16px; }
+
+      /* カテゴリ入力行 */
+      .cat-label { font-size: 0.9rem; }
+      .date-label { font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title-row">
+      <h1>ToDoリスト</h1>
+      <button class="dark-toggle" id="darkToggle" onclick="toggleDark()">ダーク</button>
+    </div>
+    <div class="input-section">
+      <input type="text" id="newTask" placeholder="タスクを入力..." maxlength="100">
+      <div class="input-mid-row">
+        <div class="priority-group">
+          <button class="pri-btn" data-pri="high" onclick="selectPriority('high', this)">高</button>
+          <button class="pri-btn active" data-pri="mid" onclick="selectPriority('mid', this)">中</button>
+          <button class="pri-btn" data-pri="low" onclick="selectPriority('low', this)">低</button>
+        </div>
+        <label class="cat-label">
+          カテゴリ:
+          <input type="text" id="newCategory" list="categoryList" placeholder="なし" maxlength="20">
+          <datalist id="categoryList"></datalist>
+        </label>
+      </div>
+      <div class="input-bottom-row">
+        <label class="date-label">
+          締め切り:
+          <input type="date" id="newDeadline">
+        </label>
+        <button onclick="addTask()">追加</button>
+      </div>
+    </div>
+    <div class="filters">
+      <button class="active" onclick="setFilter('all', this)">すべて</button>
+      <button onclick="setFilter('active', this)">未完了</button>
+      <button onclick="setFilter('done', this)">完了済み</button>
+    </div>
+    <div id="catFilterRow" class="cat-filter-row"></div>
+    <div class="chart-section" id="chartSection" style="display:none">
+      <div class="chart-wrap">
+        <svg viewBox="0 0 100 100" width="86" height="86">
+          <circle cx="50" cy="50" r="36" fill="none" stroke-width="12" class="chart-track"/>
+          <circle cx="50" cy="50" r="36" fill="none" stroke-width="12" class="chart-arc"
+                  id="chartArc" stroke-linecap="round"
+                  stroke-dasharray="0 226.2" transform="rotate(-90 50 50)"/>
+          <text x="50" y="47" text-anchor="middle" class="chart-pct" id="chartPct">0%</text>
+          <text x="50" y="59" text-anchor="middle" class="chart-sub">完了</text>
+        </svg>
+      </div>
+      <div class="chart-stats">
+        <div class="stat-item">
+          <span class="stat-dot done"></span>
+          <span class="stat-label">完了</span>
+          <span class="stat-count" id="statDone">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-dot active"></span>
+          <span class="stat-label">未完了</span>
+          <span class="stat-count" id="statActive">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-dot" style="background:#ddd"></span>
+          <span class="stat-label">合計</span>
+          <span class="stat-count" id="statTotal">0</span>
+        </div>
+      </div>
+    </div>
+    <ul id="taskList"></ul>
+    <div class="footer">
+      <span id="counter"></span>
+      <button onclick="clearDone()">完了済みを削除</button>
+    </div>
+  </div>
+
+  <script>
+    let tasks = JSON.parse(localStorage.getItem('todos') || '[]');
+    let filter = 'all';
+    let selectedPriority = 'mid';
+    let categoryFilter = null;
+
+    const CAT_COLORS_LIGHT = [
+      { bg: '#e8f0ff', text: '#3558c0', border: '#b8cbf5' },
+      { bg: '#f0e8ff', text: '#7040c0', border: '#cdb8f5' },
+      { bg: '#e8fff2', text: '#1a8050', border: '#a8f0c4' },
+      { bg: '#fff8e0', text: '#a07010', border: '#f0d890' },
+      { bg: '#ffe8f2', text: '#c03070', border: '#f0b0cc' },
+      { bg: '#e0f8f8', text: '#187878', border: '#98e0e0' },
+      { bg: '#fff0e8', text: '#c05020', border: '#f0c0a8' },
+    ];
+    const CAT_COLORS_DARK = [
+      { bg: '#1a2540', text: '#7a9be0', border: '#2a3860' },
+      { bg: '#22183a', text: '#a878e0', border: '#35285a' },
+      { bg: '#102818', text: '#50c080', border: '#1a4028' },
+      { bg: '#2a2010', text: '#d0a040', border: '#40300a' },
+      { bg: '#2a1020', text: '#e06090', border: '#401828' },
+      { bg: '#102222', text: '#40c0c0', border: '#183535' },
+      { bg: '#281808', text: '#e08050', border: '#3a2010' },
+    ];
+
+    function getCatColor(name) {
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) & 0xffff;
+      const palette = document.body.classList.contains('dark') ? CAT_COLORS_DARK : CAT_COLORS_LIGHT;
+      return palette[hash % palette.length];
+    }
+
+    function save() {
+      localStorage.setItem('todos', JSON.stringify(tasks));
+    }
+
+    function today() {
+      return new Date().toISOString().split('T')[0];
+    }
+
+    function selectPriority(p, btn) {
+      selectedPriority = p;
+      document.querySelectorAll('.pri-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function categoryBadge(t) {
+      if (!t.category) return '';
+      const c = getCatColor(t.category);
+      return `<span class="cat-badge" style="background:${c.bg};color:${c.text};border-color:${c.border}">${escape(t.category)}</span>`;
+    }
+
+    function renderCatFilter() {
+      const categories = [...new Set(tasks.map(t => t.category).filter(Boolean))];
+      const row = document.getElementById('catFilterRow');
+      const dl  = document.getElementById('categoryList');
+      if (dl) dl.innerHTML = categories.map(c => `<option value="${c.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"></option>`).join('');
+      if (categories.length === 0) { row.innerHTML = ''; return; }
+      if (categoryFilter && !categories.includes(categoryFilter)) categoryFilter = null;
+      const allActive = categoryFilter === null;
+      row.innerHTML =
+        `<button class="cat-btn${allActive ? ' active' : ''}" data-cat="" onclick="setCategoryFilter(this.dataset.cat||null,this)">すべて</button>` +
+        categories.map(cat => {
+          const c = getCatColor(cat);
+          const isActive = categoryFilter === cat;
+          const attr = cat.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+          const style = isActive ? `background:${c.bg};color:${c.text};border-color:${c.border}` : '';
+          return `<button class="cat-btn${isActive ? ' active' : ''}" style="${style}" data-cat="${attr}" onclick="setCategoryFilter(this.dataset.cat||null,this)">${escape(cat)}</button>`;
+        }).join('');
+    }
+
+    function setCategoryFilter(cat, btn) {
+      categoryFilter = cat || null;
+      render();
+    }
+
+    function priorityBadge(t) {
+      const p = t.priority || 'mid';
+      const labels = { high: '高', mid: '中', low: '低' };
+      return `<span class="priority-badge ${p}">${labels[p]}</span>`;
+    }
+
+    function deadlineBadge(t) {
+      if (!t.deadline) return '';
+      const d = t.deadline;
+      const td = today();
+      let cls, label;
+      if (t.done) {
+        cls = 'done-date';
+        label = '締め切り: ' + formatDate(d);
+      } else if (d < td) {
+        cls = 'overdue';
+        label = '期限切れ: ' + formatDate(d);
+      } else if (d === td) {
+        cls = 'today';
+        label = '今日まで: ' + formatDate(d);
+      } else {
+        cls = 'normal';
+        label = '締め切り: ' + formatDate(d);
+      }
+      return `<span class="deadline-badge ${cls}">${label}</span>`;
+    }
+
+    function formatDate(iso) {
+      const [y, m, d] = iso.split('-');
+      return `${y}/${m}/${d}`;
+    }
+
+    function render() {
+      const list = document.getElementById('taskList');
+      const filtered = tasks.filter(t => {
+        const matchStatus = filter === 'all' ? true : filter === 'done' ? t.done : !t.done;
+        const matchCat = categoryFilter === null ? true : t.category === categoryFilter;
+        return matchStatus && matchCat;
+      });
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="empty">タスクがありません</div>';
+      } else {
+        list.innerHTML = filtered.map(t => `
+          <li class="${t.done ? 'done' : ''}" data-id="${t.id}" data-priority="${t.priority || 'mid'}"
+              draggable="true"
+              ondragstart="dragStart(event,${t.id})"
+              ondragover="dragOver(event)"
+              ondragleave="dragLeave(event)"
+              ondrop="drop(event,${t.id})"
+              ondragend="dragEnd()">
+            <span class="handle">⠿</span>
+            <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggle(${t.id})">
+            <div class="task-body">
+              <span class="task-text">${escape(t.text)}</span>
+              <div class="badges">
+                ${categoryBadge(t)}
+                ${priorityBadge(t)}
+                ${deadlineBadge(t)}
+              </div>
+            </div>
+            <button class="delete" onclick="remove(${t.id})">✕</button>
+          </li>
+        `).join('');
+      }
+
+      const active = tasks.filter(t => !t.done).length;
+      document.getElementById('counter').textContent = `残り ${active} 件`;
+      renderCatFilter();
+      renderChart();
+    }
+
+    function renderChart() {
+      const total  = tasks.length;
+      const done   = tasks.filter(t => t.done).length;
+      const active = total - done;
+      const section = document.getElementById('chartSection');
+
+      section.style.display = total === 0 ? 'none' : 'flex';
+      if (total === 0) return;
+
+      const circumference = 2 * Math.PI * 36;
+      const filled = (done / total) * circumference;
+      document.getElementById('chartArc').setAttribute('stroke-dasharray', `${filled} ${circumference}`);
+      document.getElementById('chartPct').textContent = Math.round(done / total * 100) + '%';
+      document.getElementById('statDone').textContent   = done;
+      document.getElementById('statActive').textContent = active;
+      document.getElementById('statTotal').textContent  = total;
+    }
+
+    function escape(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function addTask() {
+      const input = document.getElementById('newTask');
+      const text = input.value.trim();
+      if (!text) return;
+      const deadline  = document.getElementById('newDeadline').value || null;
+      const category  = document.getElementById('newCategory').value.trim() || null;
+      tasks.push({ id: Date.now(), text, done: false, priority: selectedPriority, deadline, category });
+      input.value = '';
+      document.getElementById('newDeadline').value  = '';
+      document.getElementById('newCategory').value  = '';
+      save();
+      render();
+    }
+
+    function toggle(id) {
+      const t = tasks.find(t => t.id === id);
+      if (t) t.done = !t.done;
+      save();
+      render();
+    }
+
+    function remove(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      save();
+      render();
+    }
+
+    function clearDone() {
+      tasks = tasks.filter(t => !t.done);
+      save();
+      render();
+    }
+
+    function setFilter(f, btn) {
+      filter = f;
+      document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    }
+
+    let dragId = null;
+
+    function dragStart(e, id) {
+      dragId = id;
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => e.target.closest('li').classList.add('dragging'), 0);
+    }
+
+    function dragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      e.currentTarget.classList.add('drag-over');
+    }
+
+    function dragLeave(e) {
+      if (!e.currentTarget.contains(e.relatedTarget)) {
+        e.currentTarget.classList.remove('drag-over');
+      }
+    }
+
+    function drop(e, targetId) {
+      e.preventDefault();
+      if (dragId === null || dragId === targetId) return;
+      const fromIdx = tasks.findIndex(t => t.id === dragId);
+      const toIdx   = tasks.findIndex(t => t.id === targetId);
+      const [moved] = tasks.splice(fromIdx, 1);
+      tasks.splice(toIdx, 0, moved);
+      save();
+      render();
+    }
+
+    function dragEnd() {
+      dragId = null;
+      document.querySelectorAll('li').forEach(li => {
+        li.classList.remove('dragging', 'drag-over');
+      });
+    }
+
+    function toggleDark() {
+      const isDark = document.body.classList.toggle('dark');
+      localStorage.setItem('darkMode', isDark ? '1' : '0');
+      document.getElementById('darkToggle').textContent = isDark ? 'ライト' : 'ダーク';
+    }
+
+
+
+    if (localStorage.getItem('darkMode') === '1') {
+      document.body.classList.add('dark');
+      document.getElementById('darkToggle').textContent = 'ライト';
+    }
+
+    render();
+  </script>
+</body>
+</html>
